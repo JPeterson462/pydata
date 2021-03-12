@@ -54,13 +54,13 @@ def dijkstra(G, src, tgt):
     dist[src] = 0
     while len(Q) > 0:
         U = min_dist(Q, dist)
-        print("min_dist: %s" % (get_fighter_name(U)))
-        Q = Q.remove(U)
+        if U is None:
+            return None # No path found
+        Q.remove(U)
         if U == tgt:
             break
         for v in range(V):
             if G[v][U] > 0:
-                print("%s %s" % (get_fighter_name(v), get_fighter_name(U)))
                 alt = dist[U] + G[v][U]
                 if alt < dist[v]:
                     dist[v] = alt
@@ -74,9 +74,22 @@ def dijkstra(G, src, tgt):
     return S
 
 def get_shortest_path(fighter1_id, fighter2_id):
-    from1 = dijkstra(matchups, fighter1_id, fighter2_id)
-    print(from1)
-    return None
+    fight_path = dijkstra(matchups, fighter1_id, fighter2_id)
+    if fight_path is None:
+        return None
+    named_fight_path = [get_fighter_id(name) for name in fight_path]
+    result = []
+    for i in range(len(named_fight_path) - 1):
+        edge_start = named_fight_path[i]
+        edge_end = named_fight_path[i + 1]
+        fights = get_fights_between(edge_start, edge_end)
+        result_matchups = []
+        for fight in fights:
+            _, red_corner, blue_corner, winner, win_type, win_details, weight_class = fight
+            did_they_win = (red_corner == fight_path[i] and winner == 'Red') or (blue_corner == fight_path[i] and winner == 'Blue')
+            result_matchups.append((fight_path[i], fight_path[i + 1], did_they_win, win_type, win_details, weight_class))
+        result.append(result_matchups)
+    return result
 
 # To find the degrees of bacon value,
 #   - Get the fighter #'s of both fighters
@@ -85,17 +98,45 @@ def get_shortest_path(fighter1_id, fighter2_id):
 #   - Construct a list of tuples for the chain
 #   - DONE
 
+win_type_lookup = {
+    "SUB": ["Submission", True],
+    "U-DEC": ["Unanimous Decision", False],
+    "S-DEC": ["Split Decision", False],
+    "M-DEC": ["Majority Decision", False],
+    "KO/TKO": ["KO/TKO", True],
+    "DQ": ["Disqualification", True],
+    "Overturned": ["Overturned", True],
+}
+def format_fight_result(win_type, win_details):
+    win_type, has_details = win_type_lookup.get(win_type, ["(unknown)", False])
+    if has_details:
+        return "%s (%s)" % (win_type, win_details)
+    else:
+        return win_type
+
+def format_fight(fight):
+    edge_start, edge_end, did_they_win, win_type, win_details, weight_class = fight
+    did_they_win_formatted = "beat" if did_they_win else "lost to"
+    return "%s %s %s by %s at %s" % (edge_start, did_they_win_formatted, edge_end, format_fight_result(win_type, win_details), weight_class)
+
+def format_matchup(fight_list):
+    first_fight_for_reference = list(fight_list[0])
+    matchup_formatted = "%s -> %s\n" % (first_fight_for_reference[0], first_fight_for_reference[1])
+    for fight in fight_list:
+        matchup_formatted = matchup_formatted + "\t" + format_fight(fight) + "\n"
+    return matchup_formatted
+
 def degrees_of_bacon(fighter1, fighter2):
     fighter1_id = get_fighter_id(fighter1)
     fighter2_id = get_fighter_id(fighter2)
-    fighter_chain = get_shortest_path(fighter1_id, fighter2_id)
-    if fighter_chain is None:
-        return None
-    else:
-        fight_chain = []
-        for i in range(len(fighter_chain) - 1):
-            fight_chain.append(get_fights_between(fighter_chain[i], fighter_chain[i + 1]))
-        return fight_chain
+    fighter_chain = get_shortest_path(fighter1_id, fighter2_id) if fighter1_id != fighter2_id else []
+    bacon_number = "%s and %s have a bacon number of %d\n\n" % (fighter1, fighter2, len(fighter_chain))
+    formatted_matchup_list = [format_matchup(fight_pair) for fight_pair in fighter_chain]
+    fighter_chain_formatted = bacon_number + "\n".join(formatted_matchup_list)
+    return fighter_chain_formatted
 
+if len(sys.argv) < 3:
+    sys.exit(1)
 
-degrees_of_bacon("Miesha Tate", "Ronda Rousey")
+degrees = degrees_of_bacon(sys.argv[1], sys.argv[2])
+print(degrees)
