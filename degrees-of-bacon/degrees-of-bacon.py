@@ -19,11 +19,17 @@ with open("graph.txt", 'r') as f:
         matchups.append(weights)
 
 def get_fighter_id(fighter_name):
+    try:
     # For large enough datasets, it would probably be better to binary search a *sorted* list
-    return fighters.index(fighter_name)
+        return fighters.index(fighter_name)
+    except:
+        return None
 
 def get_fighter_name(fighter_id):
-    return fighters[fighter_id]
+    try:
+        return fighters[fighter_id]
+    except:
+        return None
 
 def get_fights_between_ordered(fighter1, fighter2):
     fights_R = fights[fights["R_fighter"].isin([fighter1])]
@@ -129,7 +135,13 @@ def format_matchup(fight_list):
 def degrees_of_bacon(fighter1, fighter2):
     fighter1_id = get_fighter_id(fighter1)
     fighter2_id = get_fighter_id(fighter2)
+    if fighter1_id is None:
+        return "Fighter %s does not exist in this dataset" % (fighter1)
+    if fighter2_id is None:
+        return "Fighter %s does not exist in this dataset" % (fighter2)
     fighter_chain = get_shortest_path(fighter1_id, fighter2_id) if fighter1_id != fighter2_id else []
+    if fighter_chain is None or len(fighter_chain) == 0:
+        return "%s and %s have a bacon number of infinity" % (fighter1, fighter2)
     bacon_number = "%s and %s have a bacon number of %d\n\n" % (fighter1, fighter2, len(fighter_chain))
     formatted_matchup_list = [format_matchup(fight_pair) for fight_pair in fighter_chain]
     fighter_chain_formatted = bacon_number + "\n".join(formatted_matchup_list)
