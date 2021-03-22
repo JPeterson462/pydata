@@ -1,0 +1,17 @@
+Dataset 1: Record of /r/wallstreetbets
+(title, score, id, url, comms_num, created, body, timestamp)
+
+Dataset 2: Stock price tracker GME (https://www.marketwatch.com/investing/stock/gme/download-data)
+(date, open, high, low, close, volume)
+
+Analysis 1: Correlating post volume with stock price
+- stock close = X
+- count(posts on day N) = Y
+
+Analysis 2: Correlating stock price with post sentiment
+
+Analysis 3: Correlating post sentiment with score
+
+Analysis 4: Correlating stock dy/dx with post volume
+- stock close-open = delta
+- count(posts on day X) = post_volume
